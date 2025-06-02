@@ -80,6 +80,8 @@ struct ContentView: View {
             }
             .sheet(isPresented: $isShowingAddSheet) {
                 AddBoxView(onSave: addBox)
+            }.refreshable {
+                await loadBoxes()
             }
             .overlay {
                 if isLoading {
