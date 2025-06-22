@@ -30,4 +30,11 @@ class BoxDetailViewModel: ObservableObject {
     func photoURL(for filename: String) -> URL {
         APIClient.shared.photoURL(for: filename)
     }
+
+    var boxPhotoURL: URL? {
+        if let filename = detail?.photoFilename {
+            return photoURL(for: filename)
+        }
+        return detail?.photoURL
+    }
 }
