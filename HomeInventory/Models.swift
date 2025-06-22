@@ -11,10 +11,14 @@ struct Box: Identifiable, Codable {
     let id: Int
     let number: String
     let description: String?
+    let photoURL: URL?
+    let photoFilename: String?
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
         case id, number, description
+        case photoURL = "photo_url"
+        case photoFilename = "photo_filename"
         case createdAt = "created_at"
     }
 }
@@ -42,11 +46,15 @@ struct BoxDetail: Codable {
     let id: Int
     let number: String
     let description: String?
+    let photoURL: URL?
+    let photoFilename: String?
     let createdAt: Date
     let items: [Item]?
 
     enum CodingKeys: String, CodingKey {
         case id, number, description, items
+        case photoURL = "photo_url"
+        case photoFilename = "photo_filename"
         case createdAt = "created_at"
     }
 }

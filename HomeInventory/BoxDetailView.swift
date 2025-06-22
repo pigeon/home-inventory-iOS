@@ -18,6 +18,19 @@ struct BoxDetailView: View {
     var body: some View {
         List {
             if let detail = viewModel.detail {
+                if let url = viewModel.boxPhotoURL {
+                    Section {
+                        AsyncImage(url: url) { image in
+                            image
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxHeight: 200)
+                                .cornerRadius(8)
+                        } placeholder: {
+                            ProgressView()
+                        }
+                    }
+                }
                 Section {
                     Text("Number: \(detail.number)")
                     if let description = detail.description {
