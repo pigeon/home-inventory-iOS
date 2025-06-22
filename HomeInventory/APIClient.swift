@@ -17,8 +17,16 @@ import SwiftUI
 
 class APIClient {
     static let shared = APIClient()
-    //private let baseURL = URL(string: "http://localhost:8000")!
-    private let baseURL = URL(string: "http://127.0.0.1:8000")!
+    /// Base URL for API requests. Can be overridden by the `API_BASE_URL`
+    /// environment variable to allow talking to different backends without
+    /// changing code.
+    private let baseURL: URL = {
+        if let urlString = ProcessInfo.processInfo.environment["API_BASE_URL"],
+           let url = URL(string: urlString) {
+            return url
+        }
+        return URL(string: "http://127.0.0.1:8000")!
+    }()
 
     private let session: URLSession
     var authToken: String? // set this before calling secured endpoints

@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var isShowingAddSheet = false
     @State private var searchText = ""
     @State private var searchResults: [Item] = []
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -91,6 +92,15 @@ struct ContentView: View {
             .task {
                 await loadBoxes()
             }
+            .alert("Error", isPresented: .constant(errorMessage != nil), actions: {
+                Button("OK", role: .cancel) {
+                    errorMessage = nil
+                }
+            }, message: {
+                if let msg = errorMessage {
+                    Text(msg)
+                }
+            })
         }
     }
 
@@ -101,7 +111,7 @@ struct ContentView: View {
         do {
             boxes = try await APIClient.shared.listBoxes()
         } catch {
-            print("Error loading boxes: \(error.localizedDescription)")
+            errorMessage = "Error loading boxes: \(error.localizedDescription)"
         }
     }
 
@@ -117,7 +127,7 @@ struct ContentView: View {
                 )
                 boxes.append(newBox)
             } catch {
-                print("Error creating box: \(error.localizedDescription)")
+                errorMessage = "Error creating box: \(error.localizedDescription)"
             }
         }
     }
@@ -131,7 +141,7 @@ struct ContentView: View {
         do {
             searchResults = try await APIClient.shared.searchItems(query: query)
         } catch {
-            print("Search error: \(error.localizedDescription)")
+            errorMessage = "Search error: \(error.localizedDescription)"
             searchResults = []
         }
     }
@@ -144,7 +154,7 @@ struct ContentView: View {
                     try await APIClient.shared.deleteBoxFromAPI(boxId: boxId)
                     boxes.remove(at: index)
                 } catch {
-                    print("Error deleting box: \(error)")
+                    errorMessage = "Error deleting box: \(error.localizedDescription)"
                 }
             }
         }

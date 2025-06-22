@@ -1,0 +1,9 @@
+# Xcode and Swift Package Manager
+DerivedData/
+.build/
+
+# General macOS files
+.DS_Store
+
+# Xcode project user data
+*.xcuserdatad/
