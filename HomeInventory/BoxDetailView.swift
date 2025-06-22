@@ -28,13 +28,25 @@ struct BoxDetailView: View {
 
                 Section {
                     ForEach(detail.items ?? []) { item in
-                        VStack(alignment: .leading) {
+                        VStack(alignment: .leading, spacing: 8) {
                             Text(item.name)
                             if let note = item.note {
                                 Text(note)
                                     .font(.caption)
                             }
+                            if let filename = item.photoFilename {
+                                AsyncImage(url: APIClient.shared.photoURL(for: filename)) { image in
+                                    image
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(maxHeight: 200)
+                                        .cornerRadius(8)
+                                } placeholder: {
+                                    ProgressView()
+                                }
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
                 }
             } else if loading {

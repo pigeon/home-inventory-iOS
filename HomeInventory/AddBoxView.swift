@@ -10,8 +10,9 @@ struct AddBoxView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var number = ""
     @State private var description = ""
+    @State private var photo: Data?
 
-    let onSave: (String, String?) -> Void
+    let onSave: (String, String?, Data?) -> Void
 
     var body: some View {
         NavigationStack {
@@ -20,6 +21,7 @@ struct AddBoxView: View {
                     TextField("Number", text: $number)
                     TextField("Description (Optional)", text: $description)
                 }
+                PhotoPickerSection(photo: $photo)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -31,7 +33,8 @@ struct AddBoxView: View {
                     Button("Save") {
                         onSave(
                             number,
-                            description.isEmpty ? nil : description
+                            description.isEmpty ? nil : description,
+                            photo
                         )
                     }
                     .disabled(number.isEmpty)

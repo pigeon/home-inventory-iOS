@@ -25,6 +25,7 @@ struct Item: Identifiable, Codable {
     let name: String
     let note: String?
     let photoURL: URL?
+    let photoFilename: String?
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
@@ -33,6 +34,7 @@ struct Item: Identifiable, Codable {
         case name, note
         case photoURL = "photo_url"
         case createdAt = "created_at"
+        case photoFilename = "photo_filename"
     }
 }
 

@@ -5,6 +5,7 @@
 //  Created by Dmytro Golub on 03/06/2025.
 //
 import SwiftUI
+import PhotosUI
 
 struct AddItemView: View {
     @Environment(\.dismiss) var dismiss
@@ -13,6 +14,7 @@ struct AddItemView: View {
     @State private var name = ""
     @State private var note = ""
     @State private var photo: Data?
+    @State private var selectedPhoto: PhotosPickerItem?
 
     var body: some View {
         NavigationStack {
@@ -21,7 +23,7 @@ struct AddItemView: View {
                     TextField("Name", text: $name)
                     TextField("Note", text: $note)
                 }
-                // Photo picker omitted for brevity
+                PhotoPickerSection(photo: $photo)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -56,6 +58,43 @@ struct AddItemView: View {
             } catch {
                 print("Error adding item: \(error)")
                 // Consider showing an error alert to the user
+            }
+        }
+    }
+}
+
+
+struct PhotoPickerSection: View {
+    @Binding var photo: Data?
+    @State private var selectedPhoto: PhotosPickerItem?
+
+    var body: some View {
+        Section {
+            PhotosPicker("Select Photo", selection: $selectedPhoto, matching: .images)
+                .onChange(of: selectedPhoto) {
+                    Task {
+                        if let data = try? await selectedPhoto?.loadTransferable(type: Data.self) {
+                            photo = data
+                        }
+                    }
+                }
+
+            if let photo = photo {
+                #if os(iOS)
+                if let uiImage = UIImage(data: photo) {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 200)
+                }
+                #elseif os(macOS)
+                if let nsImage = NSImage(data: photo) {
+                    Image(nsImage: nsImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 200)
+                }
+                #endif
             }
         }
     }

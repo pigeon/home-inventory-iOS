@@ -31,20 +31,9 @@ class APIClient {
         session = URLSession(configuration: config)
     }
 
-//    private func makeRequest(path: String,
-//                             method: String = "GET",
-//                             body: Data? = nil,
-//                             contentType: String = "application/json") -> URLRequest {
-//        let url = baseURL.appendingPathComponent(path)
-//        var request = URLRequest(url: url)
-//        request.httpMethod = method
-//        request.setValue(contentType, forHTTPHeaderField: "Content-Type")
-//        if let token = authToken {
-//            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-//        }
-//        request.httpBody = body
-//        return request
-//    }
+    func photoURL(for filename: String) -> URL {
+        baseURL.appendingPathComponent("photos").appendingPathComponent(filename)
+    }
 
     private func makeRequest(path: String,
                              method: String = "GET",
@@ -110,11 +99,72 @@ class APIClient {
         try await request("/boxes/\(id)")
     }
 
-    // Create a box
-    func createBox(number: String, description: String?) async throws -> Box {
-        let payload = ["number": number, "description": description]
-        let data = try JSONSerialization.data(withJSONObject: payload, options: [])
-        return try await request("/boxes", method: "POST", body: data)
+
+    struct MultipartFormDataBuilder {
+        private let boundary = UUID().uuidString
+        private let lineBreak = "\r\n"
+        private var body = Data()
+
+        var contentType: String {
+            "multipart/form-data; boundary=\(boundary)"
+        }
+
+        mutating func appendField(name: String, value: String) {
+            body.append("--\(boundary)\(lineBreak)")
+            body.append("Content-Disposition: form-data; name=\"\(name)\"\(lineBreak + lineBreak)")
+            body.append("\(value)\(lineBreak)")
+        }
+
+        mutating func appendFileField(name: String, filename: String, data: Data, mimeType: String) {
+            body.append("--\(boundary)\(lineBreak)")
+            body.append("Content-Disposition: form-data; name=\"\(name)\"; filename=\"\(filename)\"\(lineBreak)")
+            body.append("Content-Type: \(mimeType)\(lineBreak + lineBreak)")
+            body.append(data)
+            body.append(lineBreak)
+        }
+
+        func build() -> Data {
+            var finalBody = body
+            finalBody.append("--\(boundary)--\(lineBreak)")
+            return finalBody
+        }
+    }
+
+
+    func createBox(number: String, description: String?, photoData: Data?) async throws -> Box {
+        var builder = MultipartFormDataBuilder()
+        builder.appendField(name: "number", value: number)
+        if let desc = description {
+            builder.appendField(name: "description", value: desc)
+        }
+        if let data = photoData {
+            builder.appendFileField(name: "photo", filename: "image.jpg", data: data, mimeType: "image/jpeg")
+        }
+
+        return try await request(
+            "/boxes",
+            method: "POST",
+            body: builder.build(),
+            contentType: builder.contentType
+        )
+    }
+
+    func createItem(boxId: Int, name: String, note: String?, photoData: Data?) async throws -> Item {
+        var builder = MultipartFormDataBuilder()
+        builder.appendField(name: "name", value: name)
+        if let note = note {
+            builder.appendField(name: "note", value: note)
+        }
+        if let data = photoData {
+            builder.appendFileField(name: "photo", filename: "image.jpg", data: data, mimeType: "image/jpeg")
+        }
+
+        return try await request(
+            "/boxes/\(boxId)/items",
+            method: "POST",
+            body: builder.build(),
+            contentType: builder.contentType
+        )
     }
 
     // Update a box
@@ -129,35 +179,6 @@ class APIClient {
     // Delete a box
     func deleteBox(id: Int) async throws {
         _ = try await request("/boxes/\(id)", method: "DELETE") as EmptyResponse
-    }
-
-    // Add an item (binary multipart)
-    func createItem(boxId: Int,
-                    name: String,
-                    note: String?,
-                    photoData: Data?) async throws -> Item {
-        // Build multipart body
-        let boundary = UUID().uuidString
-        var body = Data()
-        let lineBreak = "\r\n"
-        func appendField(name: String, value: String) {
-            body.append("--\(boundary)\(lineBreak)")
-            body.append("Content-Disposition: form-data; name=\"\(name)\"\(lineBreak + lineBreak)")
-            body.append("\(value)\(lineBreak)")
-        }
-        appendField(name: "name", value: name)
-        if let n = note { appendField(name: "note", value: n) }
-        if let data = photoData {
-            body.append("--\(boundary)\(lineBreak)")
-            body.append("Content-Disposition: form-data; name=\"photo\"; filename=\"image.jpg\"\(lineBreak)")
-            body.append("Content-Type: image/jpeg\(lineBreak + lineBreak)")
-            body.append(data)
-            body.append(lineBreak)
-        }
-        body.append("--\(boundary)--\(lineBreak)")
-
-        let contentType = "multipart/form-data; boundary=\(boundary)"
-        return try await request("/boxes/\(boxId)/items", method: "POST", body: body, contentType: contentType)
     }
 
     func searchItems(query: String) async throws -> [Item] {

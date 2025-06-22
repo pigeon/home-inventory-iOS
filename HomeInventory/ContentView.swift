@@ -105,14 +105,15 @@ struct ContentView: View {
         }
     }
 
-    private func addBox(number: String, description: String?) {
+    private func addBox(number: String, description: String?, photo: Data?) {
         isShowingAddSheet = false
 
         Task {
             do {
                 let newBox = try await APIClient.shared.createBox(
                     number: number,
-                    description: description
+                    description: description,
+                    photoData: photo
                 )
                 boxes.append(newBox)
             } catch {
