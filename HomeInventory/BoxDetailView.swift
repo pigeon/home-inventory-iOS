@@ -40,31 +40,35 @@ struct BoxDetailView: View {
 
                 Section {
                     ForEach(detail.items ?? []) { item in
-                        HStack(alignment: .top, spacing: 8) {
-                            if let filename = item.photoFilename {
-                                AsyncImage(url: viewModel.photoURL(for: filename)) { image in
-                                    image
-                                        .resizable()
-                                        .scaledToFill()
-                                        .frame(width: 60, height: 60)
-                                        .clipped()
-                                        .cornerRadius(8)
-                                } placeholder: {
-                                    ProgressView()
-                                        .frame(width: 60, height: 60)
+                        NavigationLink {
+                            ItemDetailView(item: item, boxNumber: detail.number)
+                        } label: {
+                            HStack(alignment: .top, spacing: 8) {
+                                if let filename = item.photoFilename {
+                                    AsyncImage(url: viewModel.photoURL(for: filename)) { image in
+                                        image
+                                            .resizable()
+                                            .scaledToFill()
+                                            .frame(width: 60, height: 60)
+                                            .clipped()
+                                            .cornerRadius(8)
+                                    } placeholder: {
+                                        ProgressView()
+                                            .frame(width: 60, height: 60)
+                                    }
                                 }
-                            }
 
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.name)
-                                if let note = item.note {
-                                    Text(note)
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(item.name)
+                                    if let note = item.note {
+                                        Text(note)
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    }
                                 }
                             }
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
                     }
                 }
             } else if viewModel.isLoading {

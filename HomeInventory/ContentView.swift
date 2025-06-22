@@ -21,23 +21,27 @@ struct ContentView: View {
                 if !searchText.isEmpty {
                     Section("Search Results") {
                         ForEach(searchResults) { item in
-                            VStack(alignment: .leading) {
-                                Text(item.name)
-                                if let note = item.note {
-                                    Text(note)
-                                        .font(.caption)
-                                        .foregroundColor(.gray)
-                                }
+                            NavigationLink {
+                                ItemDetailView(item: item,
+                                               boxNumber: boxes.first(where: { $0.id == item.boxId })?.number)
+                            } label: {
+                                VStack(alignment: .leading) {
+                                    Text(item.name)
+                                    if let note = item.note {
+                                        Text(note)
+                                            .font(.caption)
+                                            .foregroundColor(.gray)
+                                    }
 
-
-                                if let box = boxes.first(where: { $0.id == item.boxId }) {
-                                    Text("Box: \(box.number)")
-                                        .font(.caption)
-                                        .foregroundColor(.secondary)
-                                } else {
-                                    Text("Box: Unknown")
-                                        .font(.caption)
-                                        .foregroundColor(.red)
+                                    if let box = boxes.first(where: { $0.id == item.boxId }) {
+                                        Text("Box: \(box.number)")
+                                            .font(.caption)
+                                            .foregroundColor(.secondary)
+                                    } else {
+                                        Text("Box: Unknown")
+                                            .font(.caption)
+                                            .foregroundColor(.red)
+                                    }
                                 }
                             }
                         }
