@@ -4,24 +4,27 @@
 //
 //  Created by Dmytro Golub on 03/06/2025.
 //
+
 import SwiftUI
 
+/// View for adding a new box. All business logic is handled by
+/// ``AddBoxViewModel`` to better follow the MVVM pattern.
 struct AddBoxView: View {
     @Environment(\.dismiss) private var dismiss
-    @State private var number = ""
-    @State private var description = ""
-    @State private var photo: Data?
+    @StateObject private var viewModel: AddBoxViewModel
 
-    let onSave: (String, String?, Data?) -> Void
+    init(onSave: @escaping (String, String?, Data?) -> Void) {
+        _viewModel = StateObject(wrappedValue: AddBoxViewModel(onSave: onSave))
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Number", text: $number)
-                    TextField("Description (Optional)", text: $description)
+                    TextField("Number", text: $viewModel.number)
+                    TextField("Description (Optional)", text: $viewModel.description)
                 }
-                PhotoPickerSection(photo: $photo)
+                PhotoPickerSection(photo: $viewModel.photo)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -31,20 +34,16 @@ struct AddBoxView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        onSave(
-                            number,
-                            description.isEmpty ? nil : description,
-                            photo
-                        )
+                        viewModel.save()
                     }
-                    .disabled(number.isEmpty)
+                    .disabled(!viewModel.canSave)
                 }
             }
-            #if os(iOS)
+#if os(iOS)
             .navigationTitle("Add Box")
-            #else
+#else
             .navigationTitle("Add New Box")
-            #endif
+#endif
         }
     }
 }

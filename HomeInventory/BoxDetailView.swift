@@ -8,17 +8,16 @@
 import SwiftUI
 
 struct BoxDetailView: View {
-    let boxId: Int
-    @State private var detail: BoxDetail?
-    @State private var loading = false
+    @StateObject private var viewModel: BoxDetailViewModel
     @State private var addItem = false
-    @State private var name = ""
-    @State private var note = ""
-    @State private var photo: Data?
+
+    init(boxId: Int) {
+        _viewModel = StateObject(wrappedValue: BoxDetailViewModel(boxId: boxId))
+    }
 
     var body: some View {
         List {
-            if let detail = detail {
+            if let detail = viewModel.detail {
                 Section {
                     Text("Number: \(detail.number)")
                     if let description = detail.description {
@@ -35,7 +34,7 @@ struct BoxDetailView: View {
                                     .font(.caption)
                             }
                             if let filename = item.photoFilename {
-                                AsyncImage(url: APIClient.shared.photoURL(for: filename)) { image in
+                                AsyncImage(url: viewModel.photoURL(for: filename)) { image in
                                     image
                                         .resizable()
                                         .scaledToFit()
@@ -49,7 +48,7 @@ struct BoxDetailView: View {
                         .padding(.vertical, 4)
                     }
                 }
-            } else if loading {
+            } else if viewModel.isLoading {
                 ProgressView()
             } else {
                 Text("Error loading box details")
@@ -66,28 +65,17 @@ struct BoxDetailView: View {
             }
         }
         .sheet(isPresented: $addItem) {
-            AddItemView(boxId: boxId, onDone: refresh)
+            AddItemView(boxId: viewModel.boxId, onDone: refresh)
         }
         .task {
-            await fetch()
-        }
-    }
-
-    private func fetch() async {
-        loading = true
-        defer { loading = false }
-
-        do {
-            detail = try await APIClient.shared.getBox(boxId)
-        } catch {
-            print("Error fetching box details: \(error)")
+            await viewModel.fetch()
         }
     }
 
     private func refresh() {
         addItem = false
         Task {
-            await fetch()
+            await viewModel.fetch()
         }
     }
 }

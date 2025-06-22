@@ -9,22 +9,20 @@ import PhotosUI
 
 struct AddItemView: View {
     @Environment(\.dismiss) var dismiss
-    let boxId: Int
-    var onDone: () -> Void
-    @State private var name = ""
-    @State private var note = ""
-    @State private var photo: Data?
-    @State private var selectedPhoto: PhotosPickerItem?
-    @State private var errorMessage: String?
+    @StateObject private var viewModel: AddItemViewModel
+
+    init(boxId: Int, onDone: @escaping () -> Void) {
+        _viewModel = StateObject(wrappedValue: AddItemViewModel(boxId: boxId, onDone: onDone))
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $name)
-                    TextField("Note", text: $note)
+                    TextField("Name", text: $viewModel.name)
+                    TextField("Note", text: $viewModel.note)
                 }
-                PhotoPickerSection(photo: $photo)
+                PhotoPickerSection(photo: $viewModel.photo)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -34,36 +32,17 @@ struct AddItemView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
-                        add()
+                        viewModel.save()
                     }
-                    .disabled(name.isEmpty)  // Disable save if name is empty
+                    .disabled(!viewModel.canSave)
                 }
             }
             .navigationTitle("Add Item")
-            .alert("Error", isPresented: .constant(errorMessage != nil), actions: {
-                Button("OK", role: .cancel) { errorMessage = nil }
+            .alert("Error", isPresented: .constant(viewModel.errorMessage != nil), actions: {
+                Button("OK", role: .cancel) { viewModel.errorMessage = nil }
             }, message: {
-                if let msg = errorMessage { Text(msg) }
+                if let msg = viewModel.errorMessage { Text(msg) }
             })
-        }
-    }
-
-    func add() {
-        Task {
-            do {
-                _ = try await APIClient.shared.createItem(
-                    boxId: boxId,
-                    name: name,
-                    note: note.isEmpty ? nil : note,
-                    photoData: photo
-                )
-                await MainActor.run {
-                    onDone()
-                    dismiss()
-                }
-            } catch {
-                errorMessage = "Error adding item: \(error.localizedDescription)"
-            }
         }
     }
 }
