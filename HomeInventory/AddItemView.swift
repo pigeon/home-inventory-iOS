@@ -15,6 +15,7 @@ struct AddItemView: View {
     @State private var note = ""
     @State private var photo: Data?
     @State private var selectedPhoto: PhotosPickerItem?
+    @State private var errorMessage: String?
 
     var body: some View {
         NavigationStack {
@@ -39,6 +40,11 @@ struct AddItemView: View {
                 }
             }
             .navigationTitle("Add Item")
+            .alert("Error", isPresented: .constant(errorMessage != nil), actions: {
+                Button("OK", role: .cancel) { errorMessage = nil }
+            }, message: {
+                if let msg = errorMessage { Text(msg) }
+            })
         }
     }
 
@@ -56,8 +62,7 @@ struct AddItemView: View {
                     dismiss()
                 }
             } catch {
-                print("Error adding item: \(error)")
-                // Consider showing an error alert to the user
+                errorMessage = "Error adding item: \(error.localizedDescription)"
             }
         }
     }
