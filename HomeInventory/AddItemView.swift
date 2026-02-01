@@ -57,6 +57,10 @@ struct PhotoPickerSection: View {
 #if os(iOS)
     @State private var isShowingCamera = false
     @State private var capturedImage: UIImage?
+
+    private var isCameraAvailable: Bool {
+        UIImagePickerController.isSourceTypeAvailable(.camera)
+    }
 #endif
 
     var body: some View {
@@ -71,8 +75,11 @@ struct PhotoPickerSection: View {
                 }
 #if os(iOS)
             Button("Take Photo") {
-                isShowingCamera = true
+                if isCameraAvailable {
+                    isShowingCamera = true
+                }
             }
+            .disabled(!isCameraAvailable)
             .sheet(isPresented: $isShowingCamera) {
                 ImagePicker(image: $capturedImage)
                     .onDisappear {
