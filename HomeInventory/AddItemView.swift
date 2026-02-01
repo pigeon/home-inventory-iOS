@@ -76,6 +76,7 @@ struct PhotoPickerSection: View {
 #if os(iOS)
             Button("Take Photo") {
                 if isCameraAvailable {
+                    capturedImage = nil
                     isShowingCamera = true
                 }
             }
@@ -145,6 +146,7 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.image = nil
             picker.dismiss(animated: true)
         }
     }
