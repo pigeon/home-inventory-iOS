@@ -80,6 +80,16 @@ struct PhotoPickerSection: View {
             }
             #endif
 
+            #if os(iOS)
+            Button("Take Photo") {
+                guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+                    showCameraUnavailableAlert = true
+                    return
+                }
+                isShowingCamera = true
+            }
+            #endif
+
             if let photo = photo {
                 #if os(iOS)
                 if let uiImage = UIImage(data: photo) {
