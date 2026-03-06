@@ -54,14 +54,10 @@ struct AddItemView: View {
 struct PhotoPickerSection: View {
     @Binding var photo: Data?
     @State private var selectedPhoto: PhotosPickerItem?
-#if os(iOS)
+    #if os(iOS)
     @State private var isShowingCamera = false
-    @State private var capturedImage: UIImage?
-
-    private var isCameraAvailable: Bool {
-        UIImagePickerController.isSourceTypeAvailable(.camera)
-    }
-#endif
+    @State private var showCameraUnavailableAlert = false
+    #endif
 
     var body: some View {
         Section {
@@ -73,24 +69,16 @@ struct PhotoPickerSection: View {
                         }
                     }
                 }
-#if os(iOS)
+
+            #if os(iOS)
             Button("Take Photo") {
-                if isCameraAvailable {
-                    capturedImage = nil
-                    isShowingCamera = true
+                guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+                    showCameraUnavailableAlert = true
+                    return
                 }
+                isShowingCamera = true
             }
-            .disabled(!isCameraAvailable)
-            .sheet(isPresented: $isShowingCamera) {
-                ImagePicker(image: $capturedImage)
-                    .onDisappear {
-                        if let image = capturedImage,
-                           let data = image.jpegData(compressionQuality: 0.9) {
-                            photo = data
-                        }
-                    }
-            }
-#endif
+            #endif
 
             if let photo = photo {
                 #if os(iOS)
@@ -110,17 +98,30 @@ struct PhotoPickerSection: View {
                 #endif
             }
         }
+        #if os(iOS)
+        .sheet(isPresented: $isShowingCamera) {
+            CameraImagePicker(photoData: $photo)
+        }
+        .alert("Camera Unavailable", isPresented: $showCameraUnavailableAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This device does not support camera capture.")
+        }
+        #endif
     }
 }
 
 #if os(iOS)
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
+private struct CameraImagePicker: UIViewControllerRepresentable {
+    @Binding var photoData: Data?
+    @Environment(\.dismiss) private var dismiss
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()
-        picker.sourceType = .camera
         picker.delegate = context.coordinator
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.allowsEditing = false
         return picker
     }
 
@@ -131,23 +132,22 @@ struct ImagePicker: UIViewControllerRepresentable {
     }
 
     final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        private let parent: ImagePicker
+        private let parent: CameraImagePicker
 
-        init(_ parent: ImagePicker) {
+        init(_ parent: CameraImagePicker) {
             self.parent = parent
         }
 
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let uiImage = info[.originalImage] as? UIImage {
-                parent.image = uiImage
-            }
-            picker.dismiss(animated: true)
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
         }
 
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.image = nil
-            picker.dismiss(animated: true)
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.photoData = image.jpegData(compressionQuality: 0.9)
+            }
+            parent.dismiss()
         }
     }
 }
