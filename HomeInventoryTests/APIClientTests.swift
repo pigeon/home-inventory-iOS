@@ -20,11 +20,11 @@ final class APIClientTests: XCTestCase {
         super.tearDown()
     }
 
-    private func makeClient() -> APIClient {
+    private func makeClient(baseURL: URL = URL(string: "http://test.local")!) -> APIClient {
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]
         let session = URLSession(configuration: config)
-        return APIClient(baseURL: URL(string: "http://test.local")!, session: session)
+        return APIClient(baseURL: baseURL, session: session)
     }
 
     func testPhotoURL_AppendsPhotosPathAndFilename() {
@@ -164,6 +164,48 @@ final class APIClientTests: XCTestCase {
         }
 
         try await client.deleteBoxFromAPI(boxId: 42)
+    }
+
+    func testDeleteBoxFromAPI_WithBasePath_PreservesBasePath() async throws {
+        let client = makeClient(baseURL: URL(string: "http://test.local/api")!)
+
+        MockURLProtocol.setHandler(method: "DELETE", path: "/api/boxes/42") { request in
+            XCTAssertEqual(request.httpMethod, "DELETE")
+            XCTAssertEqual(request.url?.path, "/api/boxes/42")
+
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 204,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, Data())
+        }
+
+        try await client.deleteBoxFromAPI(boxId: 42)
+    }
+
+    func testSearchItems_WithBasePath_PreservesBasePathAndQuery() async throws {
+        let client = makeClient(baseURL: URL(string: "http://test.local/api")!)
+
+        MockURLProtocol.setHandler(method: "GET", path: "/api/search") { request in
+            XCTAssertEqual(request.httpMethod, "GET")
+            XCTAssertEqual(request.url?.path, "/api/search")
+            XCTAssertEqual(request.url?.query, "query=desk")
+
+            let json = """
+            []
+            """.data(using: .utf8)!
+            let response = HTTPURLResponse(
+                url: request.url!,
+                statusCode: 200,
+                httpVersion: nil,
+                headerFields: nil
+            )!
+            return (response, json)
+        }
+
+        _ = try await client.searchItems(query: "desk")
     }
 }
 
