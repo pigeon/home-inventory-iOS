@@ -17,27 +17,32 @@ import SwiftUI
 
 class APIClient {
     static let shared = APIClient()
-    /// Base URL for API requests. Can be overridden by the `API_BASE_URL`
-    /// environment variable to allow talking to different backends without
-    /// changing code.
-    private let baseURL: URL = {
+    private let baseURL: URL
+
+    private let session: URLSession
+    var authToken: String? // set this before calling secured endpoints
+
+    init(baseURL: URL? = nil, session: URLSession? = nil) {
+        self.baseURL = baseURL ?? Self.defaultBaseURL
+
+        if let session {
+            self.session = session
+        } else {
+            let config = URLSessionConfiguration.default
+            #if os(iOS)
+            config.waitsForConnectivity = true
+            #endif
+            self.session = URLSession(configuration: config)
+        }
+    }
+
+    private static var defaultBaseURL: URL {
         if let urlString = ProcessInfo.processInfo.environment["API_BASE_URL"],
            let url = URL(string: urlString) {
             return url
         }
         //return URL(string: "http://127.0.0.1:8000")!
         return URL(string: "http://192.168.68.117:8000")!
-    }()
-
-    private let session: URLSession
-    var authToken: String? // set this before calling secured endpoints
-
-    private init() {
-        let config = URLSessionConfiguration.default
-        #if os(iOS)
-        config.waitsForConnectivity = true
-        #endif
-        session = URLSession(configuration: config)
     }
 
     func photoURL(for filename: String) -> URL {
@@ -77,7 +82,7 @@ class APIClient {
     }
 
     func request(method: String, path: String, body: Data? = nil) async throws {
-        let url = baseURL.appendingPathComponent(path)
+        let url = URL(string: path, relativeTo: baseURL)!
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = method
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -86,7 +91,7 @@ class APIClient {
             urlRequest.httpBody = body
         }
 
-        let (_, response) = try await URLSession.shared.data(for: urlRequest)
+        let (_, response) = try await session.data(for: urlRequest)
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw URLError(.badServerResponse)
