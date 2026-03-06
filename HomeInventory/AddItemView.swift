@@ -54,14 +54,10 @@ struct AddItemView: View {
 struct PhotoPickerSection: View {
     @Binding var photo: Data?
     @State private var selectedPhoto: PhotosPickerItem?
-#if os(iOS)
+    #if os(iOS)
     @State private var isShowingCamera = false
-    @State private var capturedImage: UIImage?
-
-    private var isCameraAvailable: Bool {
-        UIImagePickerController.isSourceTypeAvailable(.camera)
-    }
-#endif
+    @State private var showCameraUnavailableAlert = false
+    #endif
 
     var body: some View {
         Section {
@@ -73,24 +69,6 @@ struct PhotoPickerSection: View {
                         }
                     }
                 }
-#if os(iOS)
-            Button("Take Photo") {
-                if isCameraAvailable {
-                    capturedImage = nil
-                    isShowingCamera = true
-                }
-            }
-            .disabled(!isCameraAvailable)
-            .sheet(isPresented: $isShowingCamera) {
-                ImagePicker(image: $capturedImage)
-                    .onDisappear {
-                        if let image = capturedImage,
-                           let data = image.jpegData(compressionQuality: 0.9) {
-                            photo = data
-                        }
-                    }
-            }
-#endif
 
             #if os(iOS)
             Button("Take Photo") {
@@ -170,45 +148,6 @@ private struct CameraImagePicker: UIViewControllerRepresentable {
                 parent.photoData = image.jpegData(compressionQuality: 0.9)
             }
             parent.dismiss()
-        }
-    }
-}
-
-#if os(iOS)
-struct ImagePicker: UIViewControllerRepresentable {
-    @Binding var image: UIImage?
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = .camera
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(self)
-    }
-
-    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        private let parent: ImagePicker
-
-        init(_ parent: ImagePicker) {
-            self.parent = parent
-        }
-
-        func imagePickerController(_ picker: UIImagePickerController,
-                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey : Any]) {
-            if let uiImage = info[.originalImage] as? UIImage {
-                parent.image = uiImage
-            }
-            picker.dismiss(animated: true)
-        }
-
-        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
-            parent.image = nil
-            picker.dismiss(animated: true)
         }
     }
 }
