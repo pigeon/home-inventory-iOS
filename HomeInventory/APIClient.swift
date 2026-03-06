@@ -49,11 +49,43 @@ class APIClient {
         baseURL.appendingPathComponent("photos").appendingPathComponent(filename)
     }
 
+    private func buildURL(path: String) -> URL {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            fatalError("Invalid base URL: \(baseURL)")
+        }
+
+        let pathComponents = URLComponents(string: path)
+        let incomingPath = (pathComponents?.percentEncodedPath ?? path)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        let basePath = (components.percentEncodedPath == "/" ? "" : components.percentEncodedPath)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+        if basePath.isEmpty && incomingPath.isEmpty {
+            components.percentEncodedPath = "/"
+        } else if basePath.isEmpty {
+            components.percentEncodedPath = "/\(incomingPath)"
+        } else if incomingPath.isEmpty {
+            components.percentEncodedPath = "/\(basePath)"
+        } else {
+            components.percentEncodedPath = "/\(basePath)/\(incomingPath)"
+        }
+
+        if let pathComponents {
+            components.percentEncodedQuery = pathComponents.percentEncodedQuery
+            components.fragment = pathComponents.fragment
+        }
+
+        guard let url = components.url else {
+            fatalError("Failed to build URL from base \(baseURL) and path \(path)")
+        }
+        return url
+    }
+
     private func makeRequest(path: String,
                              method: String = "GET",
                              body: Data? = nil,
                              contentType: String = "application/json") -> URLRequest {
-        let url = URL(string: path, relativeTo: baseURL)!
+        let url = buildURL(path: path)
         var request = URLRequest(url: url)
         request.httpMethod = method
         request.setValue(contentType, forHTTPHeaderField: "Content-Type")
@@ -82,7 +114,7 @@ class APIClient {
     }
 
     func request(method: String, path: String, body: Data? = nil) async throws {
-        let url = URL(string: path, relativeTo: baseURL)!
+        let url = buildURL(path: path)
         var urlRequest = URLRequest(url: url)
         urlRequest.httpMethod = method
         urlRequest.setValue("application/json", forHTTPHeaderField: "Content-Type")
