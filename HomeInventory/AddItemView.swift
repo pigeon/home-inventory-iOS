@@ -92,6 +92,16 @@ struct PhotoPickerSection: View {
             }
 #endif
 
+            #if os(iOS)
+            Button("Take Photo") {
+                guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+                    showCameraUnavailableAlert = true
+                    return
+                }
+                isShowingCamera = true
+            }
+            #endif
+
             if let photo = photo {
                 #if os(iOS)
                 if let uiImage = UIImage(data: photo) {
@@ -109,6 +119,57 @@ struct PhotoPickerSection: View {
                 }
                 #endif
             }
+        }
+        #if os(iOS)
+        .sheet(isPresented: $isShowingCamera) {
+            CameraImagePicker(photoData: $photo)
+        }
+        .alert("Camera Unavailable", isPresented: $showCameraUnavailableAlert) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("This device does not support camera capture.")
+        }
+        #endif
+    }
+}
+
+#if os(iOS)
+private struct CameraImagePicker: UIViewControllerRepresentable {
+    @Binding var photoData: Data?
+    @Environment(\.dismiss) private var dismiss
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.delegate = context.coordinator
+        picker.sourceType = .camera
+        picker.cameraCaptureMode = .photo
+        picker.allowsEditing = false
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator(self)
+    }
+
+    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+        private let parent: CameraImagePicker
+
+        init(_ parent: CameraImagePicker) {
+            self.parent = parent
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+
+        func imagePickerController(_ picker: UIImagePickerController,
+                                   didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.photoData = image.jpegData(compressionQuality: 0.9)
+            }
+            parent.dismiss()
         }
     }
 }
