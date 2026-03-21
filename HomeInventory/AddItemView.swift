@@ -26,6 +26,15 @@ struct AddItemView: View {
                     TextField("Note", text: $viewModel.note)
                 }
                 PhotoPickerSection(photo: $viewModel.photo)
+                if !viewModel.suggestedNames.isEmpty {
+                    Section("Suggestions") {
+                        ForEach(viewModel.suggestedNames, id: \.self) { suggestion in
+                            Button(action: { viewModel.name = suggestion }) {
+                                Text(suggestion)
+                            }
+                        }
+                    }
+                }
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

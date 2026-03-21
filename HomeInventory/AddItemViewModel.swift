@@ -4,7 +4,10 @@ import SwiftUI
 class AddItemViewModel: ObservableObject {
     @Published var name: String = ""
     @Published var note: String = ""
-    @Published var photo: Data?
+    @Published var photo: Data? {
+        didSet { classifyPhoto() }
+    }
+    @Published var suggestedNames: [String] = []
     @Published var errorMessage: String?
 
     private let boxId: Int
@@ -13,6 +16,23 @@ class AddItemViewModel: ObservableObject {
     init(boxId: Int, onDone: @escaping () -> Void) {
         self.boxId = boxId
         self.onDone = onDone
+    }
+
+    private func classifyPhoto() {
+        guard let photo else {
+            suggestedNames = []
+            return
+        }
+        Task {
+            do {
+                let names = try await ImageClassifier.shared.classify(imageData: photo)
+                await MainActor.run {
+                    self.suggestedNames = Array(names.prefix(5))
+                }
+            } catch {
+                // ignore classification errors
+            }
+        }
     }
 
     var canSave: Bool {
