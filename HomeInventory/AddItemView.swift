@@ -22,25 +22,88 @@ struct AddItemView: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField("Name", text: $viewModel.name)
+                    TextField("Custom Name", text: $viewModel.name)
                     TextField("Note", text: $viewModel.note)
                 }
+                .listRowBackground(Color.appSurface)
                 PhotoPickerSection(photo: $viewModel.photo)
+
+                if viewModel.isAnalyzingPhoto || !viewModel.suggestedNames.isEmpty || viewModel.suggestionMessage != nil {
+                    Section("Suggested Items") {
+                        if let primarySuggestedName = viewModel.primarySuggestedName {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text("Recognized object")
+                                    .font(.caption)
+                                    .foregroundStyle(Color.appTextSecondary)
+                                Text(primarySuggestedName.localizedCapitalized)
+                                    .font(.headline)
+                                    .foregroundStyle(Color.appTextPrimary)
+                            }
+                        }
+
+                        if viewModel.isAnalyzingPhoto {
+                            HStack(spacing: 12) {
+                                ProgressView()
+                                Text("Analyzing photo…")
+                                    .foregroundStyle(Color.appTextSecondary)
+                            }
+                        }
+
+                        ForEach(viewModel.suggestedNames, id: \.self) { suggestion in
+                            Button {
+                                viewModel.toggleSuggestion(suggestion)
+                            } label: {
+                                HStack {
+                                    Text(suggestion.capitalized)
+                                        .foregroundStyle(Color.appTextPrimary)
+                                    Spacer()
+                                    if viewModel.selectedSuggestedNames.contains(suggestion) {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundStyle(Color.appPrimary)
+                                    } else {
+                                        Image(systemName: "circle")
+                                            .foregroundStyle(Color.appBorder)
+                                    }
+                                }
+                            }
+                            .buttonStyle(.plain)
+                        }
+
+                        if let suggestionMessage = viewModel.suggestionMessage {
+                            Text(suggestionMessage)
+                                .font(.footnote)
+                                .foregroundStyle(Color.appTextSecondary)
+                        } else if !viewModel.suggestedNames.isEmpty {
+                            Text("Tap one or more suggestions. Each selected suggestion will be saved as a separate item with the same photo.")
+                                .font(.footnote)
+                                .foregroundStyle(Color.appTextSecondary)
+                        }
+                    }
+                    .listRowBackground(Color.appSurfaceSecondary)
+                }
+            }
+            .scrollContentBackground(.hidden)
+            .background(Color.appBackground)
+            .onChange(of: viewModel.photo) {
+                viewModel.analyzePhotoSuggestions()
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundStyle(Color.appTextSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         viewModel.save()
                     }
                     .disabled(!viewModel.canSave)
+                    .foregroundStyle(viewModel.canSave ? Color.appPrimary : Color.appTextSecondary)
                 }
             }
             .navigationTitle("Add Item")
+            .toolbarBackground(Color.appBackground, for: .navigationBar)
             .alert("Error", isPresented: .constant(viewModel.errorMessage != nil), actions: {
                 Button("OK", role: .cancel) { viewModel.errorMessage = nil }
             }, message: {
@@ -87,6 +150,7 @@ struct PhotoPickerSection: View {
                         .resizable()
                         .scaledToFit()
                         .frame(maxHeight: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.mediaCornerRadius, style: .continuous))
                 }
                 #elseif os(macOS)
                 if let nsImage = NSImage(data: photo) {
@@ -94,10 +158,12 @@ struct PhotoPickerSection: View {
                         .resizable()
                         .scaledToFit()
                         .frame(maxHeight: 200)
+                        .clipShape(RoundedRectangle(cornerRadius: AppTheme.mediaCornerRadius, style: .continuous))
                 }
                 #endif
             }
         }
+        .listRowBackground(Color.appSurface)
         #if os(iOS)
         .sheet(isPresented: $isShowingCamera) {
             CameraImagePicker(photoData: $photo)

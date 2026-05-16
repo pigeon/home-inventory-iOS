@@ -24,21 +24,27 @@ struct AddBoxView: View {
                     TextField("Number", text: $viewModel.number)
                     TextField("Description (Optional)", text: $viewModel.description)
                 }
+                .listRowBackground(Color.appSurface)
                 PhotoPickerSection(photo: $viewModel.photo)
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.appBackground)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
                         dismiss()
                     }
+                    .foregroundStyle(Color.appTextSecondary)
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Save") {
                         viewModel.save()
                     }
                     .disabled(!viewModel.canSave)
+                    .foregroundStyle(viewModel.canSave ? Color.appPrimary : Color.appTextSecondary)
                 }
             }
+            .toolbarBackground(Color.appBackground, for: .navigationBar)
 #if os(iOS)
             .navigationTitle("Add Box")
 #else

@@ -12,6 +12,7 @@ struct HomeInventoryApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .tint(Color.appPrimary)
         }
     }
 }

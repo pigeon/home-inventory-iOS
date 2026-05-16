@@ -25,18 +25,23 @@ struct BoxDetailView: View {
                                 .resizable()
                                 .scaledToFit()
                                 .frame(maxHeight: 200)
-                                .cornerRadius(8)
+                                .clipShape(RoundedRectangle(cornerRadius: AppTheme.mediaCornerRadius, style: .continuous))
                         } placeholder: {
                             ProgressView()
                         }
+                        .padding(.vertical, 4)
                     }
+                    .listRowBackground(Color.appSurface)
                 }
                 Section {
                     Text("Number: \(detail.number)")
+                        .foregroundStyle(Color.appTextPrimary)
                     if let description = detail.description {
                         Text(description)
+                            .foregroundStyle(Color.appTextPrimary)
                     }
                 }
+                .listRowBackground(Color.appSurface)
 
                 Section {
                     ForEach(detail.items ?? []) { item in
@@ -51,7 +56,7 @@ struct BoxDetailView: View {
                                             .scaledToFill()
                                             .frame(width: 60, height: 60)
                                             .clipped()
-                                            .cornerRadius(8)
+                                            .clipShape(RoundedRectangle(cornerRadius: AppTheme.mediaCornerRadius, style: .continuous))
                                     } placeholder: {
                                         ProgressView()
                                             .frame(width: 60, height: 60)
@@ -60,24 +65,34 @@ struct BoxDetailView: View {
 
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text(item.name)
+                                        .foregroundStyle(Color.appTextPrimary)
                                     if let note = item.note {
                                         Text(note)
                                             .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .foregroundStyle(Color.appTextSecondary)
                                     }
                                 }
                             }
                             .padding(.vertical, 4)
                         }
+                        .listRowBackground(Color.appSurface)
                     }
                 }
             } else if viewModel.isLoading {
                 ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .listRowBackground(Color.appBackground)
             } else {
                 Text("Error loading box details")
+                    .foregroundStyle(Color.appError)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 20)
+                    .listRowBackground(Color.appSurfaceSecondary)
             }
         }
         .navigationTitle("Box Details")
+        .scrollContentBackground(.hidden)
+        .background(Color.appBackground)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -85,6 +100,7 @@ struct BoxDetailView: View {
                 } label: {
                     Image(systemName: "plus")
                 }
+                .foregroundStyle(Color.appPrimary)
             }
         }
         .sheet(isPresented: $addItem) {
@@ -93,6 +109,7 @@ struct BoxDetailView: View {
         .task {
             await viewModel.fetch()
         }
+        .toolbarBackground(Color.appBackground, for: .navigationBar)
     }
 
     private func refresh() {

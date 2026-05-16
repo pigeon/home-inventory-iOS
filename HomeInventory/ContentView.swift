@@ -27,23 +27,25 @@ struct ContentView: View {
                             } label: {
                                 VStack(alignment: .leading) {
                                     Text(item.name)
+                                        .foregroundStyle(Color.appTextPrimary)
                                     if let note = item.note {
                                         Text(note)
                                             .font(.caption)
-                                            .foregroundColor(.gray)
+                                            .foregroundStyle(Color.appTextSecondary)
                                     }
 
                                     if let box = boxes.first(where: { $0.id == item.boxId }) {
                                         Text("Box: \(box.number)")
                                             .font(.caption)
-                                            .foregroundColor(.secondary)
+                                            .foregroundStyle(Color.appTextSecondary)
                                     } else {
                                         Text("Box: Unknown")
                                             .font(.caption)
-                                            .foregroundColor(.red)
+                                            .foregroundStyle(Color.appError)
                                     }
                                 }
                             }
+                            .listRowBackground(Color.appSurface)
                         }
                     }
                 } else {
@@ -55,18 +57,22 @@ struct ContentView: View {
                                 VStack(alignment: .leading) {
                                     Text(box.number)
                                         .bold()
+                                        .foregroundStyle(Color.appTextPrimary)
 
                                     if let description = box.description {
                                         Text(description)
                                             .font(.subheadline)
-                                            .foregroundColor(.gray)
+                                            .foregroundStyle(Color.appTextSecondary)
                                     }
                                 }
                             }
+                            .listRowBackground(Color.appSurface)
                         }.onDelete(perform: deleteBox)
                     }
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(Color.appBackground)
             .navigationTitle("Boxes")
             .searchable(text: $searchText, prompt: "Search items...")
             .onChange(of: searchText) { text in
@@ -81,11 +87,13 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
+                    .foregroundStyle(Color.appPrimary)
                 }
             }
             .sheet(isPresented: $isShowingAddSheet) {
                 AddBoxView(onSave: addBox)
-            }.refreshable {
+            }
+            .refreshable {
                 await loadBoxes()
             }
             .overlay {
@@ -105,7 +113,9 @@ struct ContentView: View {
                     Text(msg)
                 }
             })
+            .toolbarBackground(Color.appBackground, for: .navigationBar)
         }
+        .background(Color.appBackground)
     }
 
     private func loadBoxes() async {

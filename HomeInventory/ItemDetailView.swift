@@ -20,29 +20,37 @@ struct ItemDetailView: View {
                             .resizable()
                             .scaledToFit()
                             .frame(maxHeight: 200)
-                            .cornerRadius(8)
+                            .clipShape(RoundedRectangle(cornerRadius: AppTheme.mediaCornerRadius, style: .continuous))
                     } placeholder: {
                         ProgressView()
                     }
+                    .padding(.vertical, 4)
                 }
+                .listRowBackground(Color.appSurface)
             }
 
             Section {
                 Text(item.name)
                     .font(.headline)
+                    .foregroundStyle(Color.appTextPrimary)
 
                 if let note = item.note {
                     Text(note)
+                        .foregroundStyle(Color.appTextPrimary)
                 }
 
                 if let boxNumber {
                     Text("Box: \(boxNumber)")
                         .font(.subheadline)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(Color.appTextSecondary)
                 }
             }
+            .listRowBackground(Color.appSurface)
         }
         .navigationTitle("Item Details")
+        .scrollContentBackground(.hidden)
+        .background(Color.appBackground)
+        .toolbarBackground(Color.appBackground, for: .navigationBar)
     }
 }
 
