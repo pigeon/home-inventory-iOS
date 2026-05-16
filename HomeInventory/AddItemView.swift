@@ -13,6 +13,10 @@ import UIKit
 struct AddItemView: View {
     @Environment(\.dismiss) var dismiss
     @StateObject private var viewModel: AddItemViewModel
+    #if os(iOS)
+    @State private var isShowingCamera = false
+    @State private var showCameraUnavailableAlert = false
+    #endif
 
     init(boxId: Int, onDone: @escaping () -> Void) {
         _viewModel = StateObject(wrappedValue: AddItemViewModel(boxId: boxId, onDone: onDone))
@@ -26,7 +30,7 @@ struct AddItemView: View {
                     TextField("Note", text: $viewModel.note)
                 }
                 .listRowBackground(Color.appSurface)
-                PhotoPickerSection(photo: $viewModel.photo)
+                PhotoPickerSection(photo: $viewModel.photo, onTakePhoto: cameraAction)
 
                 if viewModel.isAnalyzingPhoto || !viewModel.suggestedNames.isEmpty || viewModel.suggestionMessage != nil {
                     Section("Suggested Items") {
@@ -109,7 +113,36 @@ struct AddItemView: View {
             }, message: {
                 if let msg = viewModel.errorMessage { Text(msg) }
             })
+            #if os(iOS)
+            .fullScreenCover(isPresented: $isShowingCamera) {
+                CameraImagePicker(photoData: $viewModel.photo)
+                    .ignoresSafeArea()
+            }
+            .alert("Camera Unavailable", isPresented: $showCameraUnavailableAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("This device does not support camera capture.")
+            }
+            #endif
         }
+    }
+
+    #if os(iOS)
+    private func presentCamera() {
+        guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
+            showCameraUnavailableAlert = true
+            return
+        }
+        isShowingCamera = true
+    }
+    #endif
+
+    private var cameraAction: (() -> Void)? {
+        #if os(iOS)
+        presentCamera
+        #else
+        nil
+        #endif
     }
 }
 
@@ -117,10 +150,12 @@ struct AddItemView: View {
 struct PhotoPickerSection: View {
     @Binding var photo: Data?
     @State private var selectedPhoto: PhotosPickerItem?
-    #if os(iOS)
-    @State private var isShowingCamera = false
-    @State private var showCameraUnavailableAlert = false
-    #endif
+    let onTakePhoto: (() -> Void)?
+
+    init(photo: Binding<Data?>, onTakePhoto: (() -> Void)? = nil) {
+        self._photo = photo
+        self.onTakePhoto = onTakePhoto
+    }
 
     var body: some View {
         Section {
@@ -135,11 +170,7 @@ struct PhotoPickerSection: View {
 
             #if os(iOS)
             Button("Take Photo") {
-                guard UIImagePickerController.isSourceTypeAvailable(.camera) else {
-                    showCameraUnavailableAlert = true
-                    return
-                }
-                isShowingCamera = true
+                onTakePhoto?()
             }
             #endif
 
@@ -164,21 +195,11 @@ struct PhotoPickerSection: View {
             }
         }
         .listRowBackground(Color.appSurface)
-        #if os(iOS)
-        .sheet(isPresented: $isShowingCamera) {
-            CameraImagePicker(photoData: $photo)
-        }
-        .alert("Camera Unavailable", isPresented: $showCameraUnavailableAlert) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text("This device does not support camera capture.")
-        }
-        #endif
     }
 }
 
 #if os(iOS)
-private struct CameraImagePicker: UIViewControllerRepresentable {
+struct CameraImagePicker: UIViewControllerRepresentable {
     @Binding var photoData: Data?
     @Environment(\.dismiss) private var dismiss
 
