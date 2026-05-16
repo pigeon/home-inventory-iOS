@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 
+@MainActor
 class BoxDetailViewModel: ObservableObject {
     @Published var detail: BoxDetail?
     @Published var isLoading = false
@@ -11,7 +12,6 @@ class BoxDetailViewModel: ObservableObject {
         self.boxId = boxId
     }
 
-    @MainActor
     func fetch() async {
         isLoading = true
         errorMessage = nil
@@ -25,6 +25,31 @@ class BoxDetailViewModel: ObservableObject {
 
     func refresh() {
         Task { await fetch() }
+    }
+
+    func updateBox(number: String, description: String?) async -> Bool {
+        errorMessage = nil
+
+        do {
+            let updated = try await APIClient.shared.updateBox(
+                id: boxId,
+                number: number,
+                description: description
+            )
+            detail = BoxDetail(
+                id: updated.id,
+                number: updated.number,
+                description: updated.description,
+                photoURL: detail?.photoURL ?? updated.photoURL,
+                photoFilename: detail?.photoFilename ?? updated.photoFilename,
+                createdAt: updated.createdAt,
+                items: detail?.items
+            )
+            return true
+        } catch {
+            errorMessage = "Error updating box: \(error.localizedDescription)"
+            return false
+        }
     }
 
     func photoURL(for filename: String) -> URL {
